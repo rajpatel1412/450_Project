@@ -44,40 +44,44 @@
 #include "base/trace.hh"
 #include "debug/Drain.hh"
 
-SimpleMemory::SimpleMemory(const SimpleMemoryParams* p) :
-    AbstractMemory(p),
-    port(name() + ".port", *this), latency(p->latency),
-    latency_var(p->latency_var), bandwidth(p->bandwidth), isBusy(false),
-    retryReq(false), retryResp(false),
-    releaseEvent([this]{ release(); }, name()),
-    dequeueEvent([this]{ dequeue(); }, name())
+SimpleMemory::SimpleMemory(const SimpleMemoryParams *p) : AbstractMemory(p),
+                                                          latency(p->latency),
+                                                          latency_var(p->latency_var), bandwidth(p->bandwidth), isBusy(false),
+                                                          retryReq(false), retryResp(false),
+                                                          releaseEvent([this] { release(); }, name()),
+                                                          dequeueEvent([this] { dequeue(); }, name())
 {
+    for (int i = 0; i < p->port_port_connection_count; ++i)
+    {
+        ports.emplace_back(name() + csprintf(".port[%d]", i), *this, i);
+    }
 }
 
-void
-SimpleMemory::init()
+void SimpleMemory::init()
 {
     AbstractMemory::init();
 
     // allow unconnected memories as this is used in several ruby
     // systems at the moment
-    if (port.isConnected()) {
-        port.sendRangeChange();
+    for (const auto &port : ports)
+    {
+        if (port.isConnected())
+        {
+            port.sendRangeChange();
+        }
     }
 }
 
-Tick
-SimpleMemory::recvAtomic(PacketPtr pkt)
+Tick SimpleMemory::recvAtomic(PacketPtr pkt)
 {
     panic_if(pkt->cacheResponding(), "Should not see packets where cache "
-             "is responding");
+                                     "is responding");
 
     access(pkt);
     return getLatency();
 }
 
-Tick
-SimpleMemory::recvAtomicBackdoor(PacketPtr pkt, MemBackdoorPtr &_backdoor)
+Tick SimpleMemory::recvAtomicBackdoor(PacketPtr pkt, MemBackdoorPtr &_backdoor)
 {
     Tick latency = recvAtomic(pkt);
 
@@ -86,8 +90,7 @@ SimpleMemory::recvAtomicBackdoor(PacketPtr pkt, MemBackdoorPtr &_backdoor)
     return latency;
 }
 
-void
-SimpleMemory::recvFunctional(PacketPtr pkt)
+void SimpleMemory::recvFunctional(PacketPtr pkt)
 {
     pkt->pushLabel(name());
 
@@ -96,7 +99,8 @@ SimpleMemory::recvFunctional(PacketPtr pkt)
     bool done = false;
     auto p = packetQueue.begin();
     // potentially update the packets in our packet queue as well
-    while (!done && p != packetQueue.end()) {
+    while (!done && p != packetQueue.end())
+    {
         done = pkt->trySatisfyFunctional(p->pkt);
         ++p;
     }
@@ -104,15 +108,15 @@ SimpleMemory::recvFunctional(PacketPtr pkt)
     pkt->popLabel();
 }
 
-bool
-SimpleMemory::recvTimingReq(PacketPtr pkt)
+bool SimpleMemory::recvTimingReq(PacketPtr pkt, int port_id)
 {
     panic_if(pkt->cacheResponding(), "Should not see packets where cache "
-             "is responding");
+                                     "is responding");
 
     panic_if(!(pkt->isRead() || pkt->isWrite()),
              "Should only see read and writes at memory controller, "
-             "saw %s to %#llx\n", pkt->cmdString(), pkt->getAddr());
+             "saw %s to %#llx\n",
+             pkt->cmdString(), pkt->getAddr());
 
     // we should not get a new request after committing to retry the
     // current one, but unfortunately the CPU violates this rule, so
@@ -122,7 +126,8 @@ SimpleMemory::recvTimingReq(PacketPtr pkt)
 
     // if we are busy with a read or write, remember that we have to
     // retry
-    if (isBusy) {
+    if (isBusy)
+    {
         retryReq = true;
         return false;
     }
@@ -145,7 +150,8 @@ SimpleMemory::recvTimingReq(PacketPtr pkt)
     // only consider ourselves busy if there is any need to wait
     // to avoid extra events being scheduled for (infinitely) fast
     // memories
-    if (duration != 0) {
+    if (duration != 0)
+    {
         schedule(releaseEvent, curTick() + duration);
         isBusy = true;
     }
@@ -155,7 +161,8 @@ SimpleMemory::recvTimingReq(PacketPtr pkt)
     bool needsResponse = pkt->needsResponse();
     recvAtomic(pkt);
     // turn packet around to go back to requestor if response expected
-    if (needsResponse) {
+    if (needsResponse)
+    {
         // recvAtomic() should already have turned packet into
         // atomic response
         assert(pkt->isResponse());
@@ -175,62 +182,64 @@ SimpleMemory::recvTimingReq(PacketPtr pkt)
 
         // emplace inserts the element before the position pointed to by
         // the iterator, so advance it one step
-        packetQueue.emplace(++i, pkt, when_to_send);
+        packetQueue.emplace(++i, pkt, when_to_send, port_id);
 
         if (!retryResp && !dequeueEvent.scheduled())
             schedule(dequeueEvent, packetQueue.back().tick);
-    } else {
+    }
+    else
+    {
         pendingDelete.reset(pkt);
     }
 
     return true;
 }
 
-void
-SimpleMemory::release()
+void SimpleMemory::release()
 {
     assert(isBusy);
     isBusy = false;
-    if (retryReq) {
-        retryReq = false;
-        port.sendRetryReq();
+    for (auto &port : ports)
+    {
+        port.trySendRetry();
     }
 }
 
-void
-SimpleMemory::dequeue()
+void SimpleMemory::dequeue()
 {
     assert(!packetQueue.empty());
     DeferredPacket deferred_pkt = packetQueue.front();
 
-    retryResp = !port.sendTimingResp(deferred_pkt.pkt);
+    retryResp = !ports[deferred_pkt.portNum].sendTimingResp(deferred_pkt.pkt);
 
-    if (!retryResp) {
+    if (!retryResp)
+    {
         packetQueue.pop_front();
 
         // if the queue is not empty, schedule the next dequeue event,
         // otherwise signal that we are drained if we were asked to do so
-        if (!packetQueue.empty()) {
+        if (!packetQueue.empty())
+        {
             // if there were packets that got in-between then we
             // already have an event scheduled, so use re-schedule
             reschedule(dequeueEvent,
                        std::max(packetQueue.front().tick, curTick()), true);
-        } else if (drainState() == DrainState::Draining) {
+        }
+        else if (drainState() == DrainState::Draining)
+        {
             DPRINTF(Drain, "Draining of SimpleMemory complete\n");
             signalDrainDone();
         }
     }
 }
 
-Tick
-SimpleMemory::getLatency() const
+Tick SimpleMemory::getLatency() const
 {
     return latency +
-        (latency_var ? random_mt.random<Tick>(0, latency_var) : 0);
+           (latency_var ? random_mt.random<Tick>(0, latency_var) : 0);
 }
 
-void
-SimpleMemory::recvRespRetry()
+void SimpleMemory::recvRespRetry()
 {
     assert(retryResp);
 
@@ -240,28 +249,38 @@ SimpleMemory::recvRespRetry()
 Port &
 SimpleMemory::getPort(const std::string &if_name, PortID idx)
 {
-    if (if_name != "port") {
+    if (if_name != "port")
+    {
         return AbstractMemory::getPort(if_name, idx);
-    } else {
-        return port;
+    }
+    else
+    {
+        assert(idx < ports.size());
+        return ports[idx];
     }
 }
 
 DrainState
 SimpleMemory::drain()
 {
-    if (!packetQueue.empty()) {
+    if (!packetQueue.empty())
+    {
         DPRINTF(Drain, "SimpleMemory Queue has requests, waiting to drain\n");
         return DrainState::Draining;
-    } else {
+    }
+    else
+    {
         return DrainState::Drained;
     }
 }
 
-SimpleMemory::MemoryPort::MemoryPort(const std::string& _name,
-                                     SimpleMemory& _memory)
-    : ResponsePort(_name, &_memory), memory(_memory)
-{ }
+SimpleMemory::MemoryPort::MemoryPort(const std::string &_name,
+                                     SimpleMemory &_memory, int port_id)
+    : ResponsePort(_name, &_memory), memory(_memory), busy(false), idx(port_id)
+
+//    : ResponsePort(_name, &_memory), memory(_memory)
+{
+}
 
 AddrRangeList
 SimpleMemory::MemoryPort::getAddrRanges() const
@@ -271,38 +290,33 @@ SimpleMemory::MemoryPort::getAddrRanges() const
     return ranges;
 }
 
-Tick
-SimpleMemory::MemoryPort::recvAtomic(PacketPtr pkt)
+Tick SimpleMemory::MemoryPort::recvAtomic(PacketPtr pkt)
 {
     return memory.recvAtomic(pkt);
 }
 
-Tick
-SimpleMemory::MemoryPort::recvAtomicBackdoor(
-        PacketPtr pkt, MemBackdoorPtr &_backdoor)
+Tick SimpleMemory::MemoryPort::recvAtomicBackdoor(
+    PacketPtr pkt, MemBackdoorPtr &_backdoor)
 {
     return memory.recvAtomicBackdoor(pkt, _backdoor);
 }
 
-void
-SimpleMemory::MemoryPort::recvFunctional(PacketPtr pkt)
+void SimpleMemory::MemoryPort::recvFunctional(PacketPtr pkt)
 {
     memory.recvFunctional(pkt);
 }
 
-bool
-SimpleMemory::MemoryPort::recvTimingReq(PacketPtr pkt)
+bool SimpleMemory::MemoryPort::recvTimingReq(PacketPtr pkt)
 {
-    return memory.recvTimingReq(pkt);
+    return memory.recvTimingReq(pkt, idx);
 }
 
-void
-SimpleMemory::MemoryPort::recvRespRetry()
+void SimpleMemory::MemoryPort::recvRespRetry()
 {
     memory.recvRespRetry();
 }
 
-SimpleMemory*
+SimpleMemory *
 SimpleMemoryParams::create()
 {
     return new SimpleMemory(this);
