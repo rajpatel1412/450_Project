@@ -1,0 +1,11 @@
+warn: interrupts.int_master is deprecated. `int_master` is now called `int_requestor`
+warn: interrupts.int_slave is deprecated. `int_slave` is now called `int_responder`
+warn: No dot file generated. Please install pydot to generate the dot file and pdf.
+warn: DRAM device capacity (8192 Mbytes) does not match the address range assigned (2048 Mbytes)
+0: system.remote_gdb: listening for remote gdb on port 7000
+info: Entering event queue @ 0.  Starting simulation...
+warn: x86 cpuid family 0x0000: unimplemented function 13
+info: Increasing stack size by one page.
+warn: readlink() called on '/proc/self/exe' may yield unexpected results in various settings.
+      Returning '/data/home/bhow/450_Project/microbenchmark/CCl/bench.X86'
+warn: ignoring syscall mprotect(...)

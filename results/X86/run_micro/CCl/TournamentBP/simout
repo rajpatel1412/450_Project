@@ -1,0 +1,17 @@
+gem5 Simulator System.  http://gem5.org
+gem5 is copyrighted software; use the --copyright option for details.
+
+gem5 version 20.1.0.2
+gem5 compiled Nov  5 2023 00:30:30
+gem5 started Nov  5 2023 23:06:49
+gem5 executing on ARCH-750, pid 3273124
+command line: build/X86/gem5.opt -re --outdir=/data/home/bhow/450_Project/results/X86/run_micro/CCl/TournamentBP gem5-config/run_micro.py TournamentBP microbenchmark/CCl/bench.X86
+
+Global frequency set at 1000000000000 ticks per second
+Exit Eventexiting with last active thread context
+Terminated simulation before reaching ROI!
+Performance statistics:
+Simulated time: 0.00s
+Instructions executed: 22698
+Ran a total of 0.000128689 simulated seconds
+Total wallclock time: 0.61s, 0.01 min
