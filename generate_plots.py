@@ -28,14 +28,14 @@ def doplot_benchmarks(df,benchmarks,stat,predictors,key,norm=True):
         base = df[(df['benchmark']==bm)][stat].iloc[0] if norm else 1
         for j,sys in enumerate(predictors):
             d = df[(df[key]==sys) & (df['benchmark']==bm)]
-            ax.bar(i, d[stat].iloc[0]/base, color='C'+str(j))
+            rects = ax.barh(i, d[stat].iloc[0]/base, color='C'+str(j))
+            ax.bar_label(rects, padding=3)
             i += 1
         i += 1
     for i,sys in enumerate(predictors):
         plt.bar(0,0,color='C'+str(i), label=sys)
     new_names = benchmarks 
-    # Arranging ticks on the X axis
-    plt.xticks(np.arange(len(new_names))*(len(predictors)+1)+i/2, new_names, rotation=40, ha='right')
+    plt.yticks(np.arange(len(new_names))*(len(predictors)+1)+i/2, new_names, rotation=40, ha='right')
 
 if(len(sys.argv) != 3):
     print("Expected input: python3 generate_plots.py plot_stat output_file")
@@ -70,8 +70,9 @@ fig_size[0] = 10
 fig_size[1] = 5
 plt.rcParams["figure.figsize"] = fig_size
 fig1 = doplot_benchmarks(df,benchmarks,plot_stat,predictors,'predictor',norm=False)
-plt.ylabel('')
+plt.xlabel('')
 plt.legend(loc=2)
+plt.xlim(left=0)
 plt.title(plot_stat)
 plt.tight_layout()
 plt.savefig(output_file, format='png', dpi=600)
