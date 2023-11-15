@@ -64,6 +64,7 @@ for bm in benchmarks:
 df = pd.DataFrame(rows, columns=['benchmark','predictor', 'cycles','instructions', 'Ops', 'Ticks','Host', 'branchMispredicts', 'execBranches', 'condPredicted', 'condIncorrect'])
 df['ipc'] = df['instructions']/df['cycles']
 df['cpi']= 1/df['ipc']
+df['accuracy'] = 1-df['condIncorrect']/df['condPredicted']
 print(df)
 fig_size = plt.rcParams["figure.figsize"]
 fig_size[0] = 10
