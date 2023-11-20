@@ -111,7 +111,7 @@ PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
     {
         prediction_output += (perceptrons[globalHistoryIdx][i]
                              * ((globalHistoryReg[tid]
-                             >> perceptrons[globalHistoryIdx].size() - i)
+                             >> perceptrons[globalHistoryIdx].size()-i-1)
                              & 1));
 
     }
