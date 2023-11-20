@@ -5,7 +5,7 @@ from __future__ import print_function
 import argparse
 import m5
 from m5.objects import DerivO3CPU
-from m5.objects import LTAGE, LocalBP, TournamentBP, BiModeBP#, PerceptronBP
+from m5.objects import LTAGE, LocalBP, TournamentBP, BiModeBP, PerceptronBP
 from m5.objects import Root
 from m5.objects import *
 import time
@@ -23,12 +23,12 @@ class TournamentBPCPU(DerivO3CPU):
 class BiModeBPCPU(DerivO3CPU):
     branchPred = BiModeBP()
 
-# class PerceptronBPCPU(DeriveO3CPU):
-#     branchPred = PerceptronBP()
+class PerceptronBPCPU(DerivO3CPU):
+    branchPred = PerceptronBP()
 
 # Add more CPUs under test before this
-valid_cpus = [LTAGECPU, LocalBPCPU, TournamentBPCPU, BiModeBPCPU]
-            #   PerceptronBPCPU]
+valid_cpus = [LTAGECPU, LocalBPCPU, TournamentBPCPU, BiModeBPCPU,
+              PerceptronBPCPU]
 valid_cpus = {cls.__name__[:-3]:cls for cls in valid_cpus}
 
 parser = argparse.ArgumentParser()
