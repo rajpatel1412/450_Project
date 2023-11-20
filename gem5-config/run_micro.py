@@ -23,7 +23,7 @@ class TournamentBPCPU(DerivO3CPU):
 class BiModeBPCPU(DerivO3CPU):
     branchPred = BiModeBP()
 
-class PerceptronBPCPU(DeriveO3CPU):
+class PerceptronBPCPU(DerivO3CPU):
     branchPred = PerceptronBP()
 
 # Add more CPUs under test before this
