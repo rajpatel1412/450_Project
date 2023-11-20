@@ -8,7 +8,8 @@ import multiprocessing as mp
 import argparse
 
 def experiment_1(args,bm_list):
-    bp_types = ['LTAGE', 'LocalBP', 'TournamentBP', 'BiModeBP', 'PerceptronBP']
+    bp_types = ['LTAGE', 'LocalBP', 'TournamentBP', 'BiModeBP']
+    #, 'PerceptronBP']
     jobs = []
     for bm in bm_list:
         for bp in bp_types:

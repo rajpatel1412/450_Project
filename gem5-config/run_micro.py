@@ -27,8 +27,8 @@ class PerceptronBPCPU(DeriveO3CPU):
     branchPred = PerceptronBP()
 
 # Add more CPUs under test before this
-valid_cpus = [LTAGECPU, LocalBPCPU, TournamentBPCPU, BiModeBPCPU,
-              PerceptronBPCPU]
+valid_cpus = [LTAGECPU, LocalBPCPU, TournamentBPCPU, BiModeBPCPU]
+            #   PerceptronBPCPU]
 valid_cpus = {cls.__name__[:-3]:cls for cls in valid_cpus}
 
 parser = argparse.ArgumentParser()
