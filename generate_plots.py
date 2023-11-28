@@ -45,7 +45,7 @@ if(len(sys.argv) != 3):
 output_file = sys.argv[2]
 plot_stat = sys.argv[1]
 benchmarks = ["CCa", "CCl", "DP1f", "ED1", "EI", "MI"]
-predictors = ["BiModeBP", "LocalBP", "LTAGE", "TournamentBP"]
+predictors = ["BiModeBP", "LocalBP", "LTAGE", "TournamentBP", "PerceptronBP"]
 
 rows = []
 for bm in benchmarks: 

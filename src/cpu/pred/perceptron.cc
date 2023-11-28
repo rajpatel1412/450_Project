@@ -40,12 +40,15 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams *params)
       globalHistoryBits(ceilLog2(params->globalPredictorSize)),
       globalPredictorSize(params->globalPredictorSize)
 {
+    //std::cout << "Perceptron Constructor" << std::endl;
     if (!isPowerOf2(globalPredictorSize))
         fatal("Invalid global history predictor size.\n");
 
     historyRegisterMask = mask(globalHistoryBits);
     globalHistoryMask = globalPredictorSize - 1;
+    perceptrons.resize(globalPredictorSize);
     for (int i = 0; i < globalPredictorSize; i++) {
+        perceptrons[i].resize(globalHistoryBits);
         for (int j = 0; j < globalHistoryBits; j++) {
             perceptrons[i][j] = 0;
         }
@@ -60,9 +63,11 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams *params)
 void
 PerceptronBP::uncondBranch(ThreadID tid, Addr pc, void * &bpHistory)
 {
+    //std::cout << "Perceptron uncondBranch" << std::endl;
     BPHistory *history = new BPHistory;
     history->globalHistoryReg = globalHistoryReg[tid];
     history->finalPred = true;
+    history->weights.resize(globalHistoryBits);
     for (int i = 0; i < history->weights.size(); i++)
     {
         history->weights[i] = 1;
@@ -75,6 +80,7 @@ void
 // PerceptronBP::squash(ThreadID tid, void *bpHistory, Addr branchAddr)
 PerceptronBP::squash(ThreadID tid, void *bpHistory)
 {
+    //std::cout << "Perceptron squash" << std::endl;
     BPHistory *history = static_cast<BPHistory*>(bpHistory);
     globalHistoryReg[tid] = history->globalHistoryReg;
     // unsigned globalHistoryIdx = (((branchAddr >> instShiftAmt)
@@ -100,6 +106,7 @@ PerceptronBP::squash(ThreadID tid, void *bpHistory)
 bool
 PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
 {
+    //std::cout << "Perceptron lookup" << std::endl;
     unsigned globalHistoryIdx = (((branchAddr >> instShiftAmt)
                                 ^ globalHistoryReg[tid])
                                 & globalHistoryMask);
@@ -120,6 +127,7 @@ PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
 
     BPHistory *history = new BPHistory;
     history->globalHistoryReg = globalHistoryReg[tid];
+    history->weights.resize(globalHistoryBits);
     for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
     {
         history->weights[i] = perceptrons[globalHistoryIdx][i];
@@ -134,6 +142,7 @@ PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
 void
 PerceptronBP::btbUpdate(ThreadID tid, Addr branchAddr, void * &bpHistory)
 {
+    //std::cout << "Perceptron btbUpdate" << std::endl;
     globalHistoryReg[tid] &= (historyRegisterMask & ~ULL(1));
 }
 
@@ -148,6 +157,7 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
                     void *bpHistory, bool squashed, const StaticInstPtr &
                     inst, Addr corrTarget)
 {
+    //std::cout << "Perceptron update" << std::endl;
     assert(bpHistory);
 
     BPHistory *history = static_cast<BPHistory*>(bpHistory);
@@ -155,6 +165,7 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
     // We do not update the counters speculatively on a squash.
     // We just restore the global history register.
     if (squashed) {
+        //std::cout << "squashed" << std::endl;
         globalHistoryReg[tid] = (history->globalHistoryReg << 1) | taken;
         return;
     }
@@ -177,6 +188,9 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
         * the whole point of the bi-mode predictor is to identify the
         * atypical case when a branch deviates from its bias.
         */
+        //std::cout << "taken" << std::endl;
+        //std::cout << perceptrons[globalHistoryIdx].size() << " " << history->weights.size() << std::endl;
+        
         for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
         {
             perceptrons[globalHistoryIdx][i] = history->weights[i] + 1;
@@ -184,6 +198,7 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
     }
     else
     {
+        //std::cout << "not taken" << std::endl;
         for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
         {
             perceptrons[globalHistoryIdx][i] = history->weights[i] - 1;
@@ -196,6 +211,7 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
 void
 PerceptronBP::updateGlobalHistReg(ThreadID tid, bool taken)
 {
+    //std::cout << "Perceptron updateGlobalHistReg" << std::endl;
     globalHistoryReg[tid] = taken ? (globalHistoryReg[tid] << 1) | 1 :
                                (globalHistoryReg[tid] << 1);
     globalHistoryReg[tid] &= historyRegisterMask;
