@@ -53,6 +53,8 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams *params)
             perceptrons[i][j] = 0;
         }
     }
+   counter = 0;
+   branchAddress = 0;
 }
 
 /*
@@ -134,6 +136,27 @@ PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
     }
     history->finalPred = finalPrediction;
     bpHistory = static_cast<void*>(history);
+
+    //TESTING
+    if (counter >= 2000 && counter <= 2050)
+    {
+        std::cout << "LOOKUP \t";
+        std::cout << "BA: " << branchAddr << "\t";
+        std::cout << "IDX: " << globalHistoryIdx << "\t";
+        std::cout << "FINAL: " << finalPrediction << "\t";
+        std::cout << "GLOBAL HIST: " << globalHistoryReg[tid] << "\t";
+        std::cout << "HISTORY: \t";
+        for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+        {
+            std::cout << history->weights[i] << "\t";
+        }
+        std::cout << "OUTPUT: " << prediction_output << "\t";
+        branchAddress = branchAddr;
+        std::cout << std::endl;
+    }
+    counter++;
+    //TESTING
+
     updateGlobalHistReg(tid, finalPrediction);
 
     return finalPrediction;
@@ -204,6 +227,24 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
             perceptrons[globalHistoryIdx][i] = history->weights[i] - 1;
         }
     }
+
+    //TESTING
+    if (branchAddress == branchAddr)
+    {
+        std::cout << "UPDATE \t";
+        std::cout << "BA: " << branchAddr << "\t";
+        std::cout << "IDX: " << globalHistoryIdx << "\t";
+        std::cout << "TAKEN: " << taken << "\t";
+        std::cout << "GLOBAL HIST: " << globalHistoryReg[tid] << "\t";
+        std::cout << "HISTORY: \t";
+        for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+        {
+            std::cout << history->weights[i] << "\t";
+        }
+        std::cout << std::endl;
+        std::cout << std::endl;
+    }
+    //TESTING
 
     delete history;
 }
