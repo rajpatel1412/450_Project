@@ -81,6 +81,9 @@ class PerceptronBP : public BPredUnit
 
     unsigned globalPredictorSize;
     unsigned globalHistoryMask;
+    //TESTING
+    int counter;
+    Addr branchAddress;
 
 
     // unsigned takenThreshold;
