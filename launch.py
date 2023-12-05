@@ -20,7 +20,7 @@ def main(args):
                 'gem5-config/run_micro.py',
                 'results/X86/run_micro/{}/{}'.format(bm,bp),
                 bp,
-                os.path.join('/data/shared/spec2017/spec2017/benchspec/CPU',bm))
+                os.path.join('benchmarks',bm))
             jobs.append(run)
 
     with mp.Pool(args.N) as pool:

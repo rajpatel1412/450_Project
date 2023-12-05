@@ -44,7 +44,7 @@ if(len(sys.argv) != 3):
 
 output_file = sys.argv[2]
 plot_stat = sys.argv[1]
-benchmarks = ["CCa", "CCl", "DP1f", "ED1", "EI", "MI"]
+benchmarks = ['600.perlbench_s', '602.gcc_s', '625.x264_s', '641.leela_s', '648.exchange2_s']
 predictors = ["BiModeBP", "LocalBP", "LTAGE", "TournamentBP", "PerceptronBP"]
 
 rows = []
