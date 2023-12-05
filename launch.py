@@ -7,19 +7,20 @@ from itertools import product
 import multiprocessing as mp
 import argparse
 
-def experiment_1(args,bm_list):
+def main(args):
     bp_types = ['LTAGE', 'LocalBP', 'TournamentBP', 'BiModeBP',
     'PerceptronBP']
     jobs = []
+    bm_list = ['600.perlbench_s', '602.gcc_s', '625.x264_s', '641.leela_s', '648.exchange2_s']
     for bm in bm_list:
         for bp in bp_types:
             run = gem5Run.createSERun(
-                'microbench_tests',
+                'spec_cpu_2017_tests',
                 'build/X86/gem5.opt',
                 'gem5-config/run_micro.py',
                 'results/X86/run_micro/{}/{}'.format(bm,bp),
                 bp,
-                os.path.join('microbenchmark',bm,'bench.X86'))
+                os.path.join('/data/shared/spec2017/spec2017/benchspec/CPU',bm))
             jobs.append(run)
 
     with mp.Pool(args.N) as pool:
@@ -36,16 +37,5 @@ if __name__ == "__main__":
     parser.add_argument('N', action="store",
                       default=1, type=int,
                       help = """Number of cores used for simulation""")
-    parser.add_argument('Experiment', action="store",
-                      default='1', type=str,
-                      help = """Experiment number""")
     args  = parser.parse_args()
-    bm_list = []
-
-    # iterate through files in microbench dir to
-    # create a list of all microbenchmarks
-
-    for filename in os.listdir('microbenchmark'):
-        if os.path.isdir(f'microbenchmark/{filename}') and filename != '.git':
-            bm_list.append(filename)
-    globals()["experiment_"+args.Experiment](args, bm_list)
+    main(args)
