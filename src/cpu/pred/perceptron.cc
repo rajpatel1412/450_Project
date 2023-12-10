@@ -45,11 +45,11 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams *params)
 
     historyRegisterMask = mask(globalHistoryBits);
     globalHistoryMask = globalPredictorSize - 1;
-    for (int i = 0; i < globalPredictorSize; i++) {
-        for (int j = 0; j < globalHistoryBits; j++) {
-            perceptrons[i][j] = 0;
-        }
-    }
+    // for (int i = 0; i < globalPredictorSize; i++) {
+    //     for (int j = 0; j < globalHistoryBits; j++) {
+    //         perceptrons[i][j] = 0;
+    //     }
+    // }
 }
 
 /*
