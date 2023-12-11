@@ -755,4 +755,4 @@ class PerceptronBP(BranchPredictor):
     cxx_class = 'PerceptronBP'
     cxx_header = "cpu/pred/perceptron.hh"
 
-    globalPredictorSize = Param.Unsigned(8192, "Size of global predictor")
+    globalPredictorSize = Param.Unsigned(16777216, "Size of global predictor")

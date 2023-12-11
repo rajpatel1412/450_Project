@@ -84,6 +84,7 @@ class PerceptronBP : public BPredUnit
     //TESTING
     int counter;
     Addr branchAddress;
+    long avgPred;
 
 
     // unsigned takenThreshold;

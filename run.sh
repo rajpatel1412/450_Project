@@ -4,4 +4,4 @@
 #SBATCH --time=60:00
 #SBATCH --mem=40G
 
-python3 launch.py 8 1
+python3 launch.py 8

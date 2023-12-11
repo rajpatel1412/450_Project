@@ -55,6 +55,7 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams *params)
     }
    counter = 0;
    branchAddress = 0;
+   avgPred = 0;
 }
 
 /*
@@ -124,8 +125,22 @@ PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
                              & 1));
 
     }
+    // avgPred += prediction_output;
+    // counter++;
 
-    bool finalPrediction = (prediction_output >= 0) ? true : false;
+    // if ((counter % 5000) == 0) {
+    //     std::cout << "AVG PREDICITON OUTPUT: " << avgPred / counter << std::endl;
+    //     avgPred /= counter;
+    //     avgPred /= 4;
+    // }
+        
+    
+    bool finalPrediction = (prediction_output >= -200) ? true : false;
+
+    // if ((counter % 10000) == 0) {
+    //     avgPred = 0;
+    //     counter = 0;
+    // }
 
     BPHistory *history = new BPHistory;
     history->globalHistoryReg = globalHistoryReg[tid];
@@ -138,23 +153,23 @@ PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
     bpHistory = static_cast<void*>(history);
 
     //TESTING
-    if (counter >= 2000 && counter <= 2050)
-    {
-        std::cout << "LOOKUP \t";
-        std::cout << "BA: " << branchAddr << "\t";
-        std::cout << "IDX: " << globalHistoryIdx << "\t";
-        std::cout << "FINAL: " << finalPrediction << "\t";
-        std::cout << "GLOBAL HIST: " << globalHistoryReg[tid] << "\t";
-        std::cout << "HISTORY: \t";
-        for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
-        {
-            std::cout << history->weights[i] << "\t";
-        }
-        std::cout << "OUTPUT: " << prediction_output << "\t";
-        branchAddress = branchAddr;
-        std::cout << std::endl;
-    }
-    counter++;
+    // if (counter >= 2000 && counter <= 2050)
+    // {
+    //     // std::cout << "LOOKUP \t";
+    //     // std::cout << "BA: " << branchAddr << "\t";
+    //     // std::cout << "IDX: " << globalHistoryIdx << "\t";
+    //     // std::cout << "FINAL: " << finalPrediction << "\t";
+    //     // std::cout << "GLOBAL HIST: " << globalHistoryReg[tid] << "\t";
+    //     // std::cout << "WEIGHTS: \t";
+    //     // for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+    //     {
+    //         std::cout << history->weights[i] << "\t";
+    //     }
+    //     std::cout << "OUTPUT: " << prediction_output << "\t";
+    //     branchAddress = branchAddr;
+    //     std::cout << std::endl;
+    // }
+    // counter++;
     //TESTING
 
     updateGlobalHistReg(tid, finalPrediction);
@@ -200,51 +215,69 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
     assert(globalHistoryIdx < globalPredictorSize);
 
 
-    if (history->finalPred == taken) {
-       /* If the final prediction matches the actual branch's
-        * outcome and the choice predictor matches the final
-        * outcome, we update the choice predictor, otherwise it
-        * is not updated. While the designers of the bi-mode
-        * predictor don't explicity say why this is done, one
-        * can infer that it is to preserve the choice predictor's
-        * bias with respect to the branch being predicted; afterall,
-        * the whole point of the bi-mode predictor is to identify the
-        * atypical case when a branch deviates from its bias.
-        */
-        //std::cout << "taken" << std::endl;
-        //std::cout << perceptrons[globalHistoryIdx].size() << " " << history->weights.size() << std::endl;
+    // if (history->finalPred == taken) {
+    //    /* If the final prediction matches the actual branch's
+    //     * outcome and the choice predictor matches the final
+    //     * outcome, we update the choice predictor, otherwise it
+    //     * is not updated. While the designers of the bi-mode
+    //     * predictor don't explicity say why this is done, one
+    //     * can infer that it is to preserve the choice predictor's
+    //     * bias with respect to the branch being predicted; afterall,
+    //     * the whole point of the bi-mode predictor is to identify the
+    //     * atypical case when a branch deviates from its bias.
+    //     */
+    //     //std::cout << "taken" << std::endl;
+    //     //std::cout << perceptrons[globalHistoryIdx].size() << " " << history->weights.size() << std::endl;
         
-        for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
-        {
+    //     for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+    //     {
+    //         perceptrons[globalHistoryIdx][i] = history->weights[i] + 1;
+    //     }
+    // }
+    // else
+    // {
+    //     //std::cout << "not taken" << std::endl;
+    //     for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+    //     {
+    //         perceptrons[globalHistoryIdx][i] = history->weights[i] - 1;
+    //     }
+    // }
+
+    for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+    {
+        int ghb = ((globalHistoryReg[tid] >> perceptrons[globalHistoryIdx].size()-i-1) & 1);
+        if (history->finalPred == ghb) {
             perceptrons[globalHistoryIdx][i] = history->weights[i] + 1;
         }
-    }
-    else
-    {
-        //std::cout << "not taken" << std::endl;
-        for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
-        {
+        else {
             perceptrons[globalHistoryIdx][i] = history->weights[i] - 1;
         }
     }
 
-    //TESTING
-    if (branchAddress == branchAddr)
-    {
-        std::cout << "UPDATE \t";
-        std::cout << "BA: " << branchAddr << "\t";
-        std::cout << "IDX: " << globalHistoryIdx << "\t";
-        std::cout << "TAKEN: " << taken << "\t";
-        std::cout << "GLOBAL HIST: " << globalHistoryReg[tid] << "\t";
-        std::cout << "HISTORY: \t";
-        for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
-        {
-            std::cout << history->weights[i] << "\t";
-        }
-        std::cout << std::endl;
-        std::cout << std::endl;
-    }
-    //TESTING
+    // //TESTING
+    // if (counter >= 2000 && counter <= 2050)
+    // {
+    //     std::cout << "UPDATE \t";
+    //     std::cout << "BA: " << branchAddr << "\t";
+    //     std::cout << "IDX: " << globalHistoryIdx << "\t";
+    //     std::cout << "PRED: " << history->finalPred << "\t";
+    //     std::cout << "TAKEN: " << taken << "\t";
+    //     std::cout << "GLOBAL HIST: " << globalHistoryReg[tid] << "\t";
+    //     std::cout << "OLD WEIGHTS: \t";
+    //     for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+    //     {
+    //         std::cout << history->weights[i] << "\t";
+    //     }
+    //     std::cout << std::endl;
+    //     std::cout << "NEW WEIGHTS: \t";
+    //     for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
+    //     {
+    //         std::cout << perceptrons[globalHistoryIdx][i] << "\t";
+    //     }
+    //     std::cout << std::endl;
+    // }
+    // counter++;
+    // //TESTING
 
     delete history;
 }
