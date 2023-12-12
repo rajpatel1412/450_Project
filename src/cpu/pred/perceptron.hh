@@ -27,7 +27,7 @@
  */
 
 /* @file
- * Implementation of a bi-mode branch predictor
+ * Implementation of a perceptron branch predictor
  */
 
 #ifndef __CPU_PRED_PERCEPTRON_PRED_HH__
@@ -38,17 +38,15 @@
 #include "params/PerceptronBP.hh"
 
 /**
- * Implements a bi-mode branch predictor. The bi-mode predictor is a two-level
- * branch predictor that has three seprate history arrays: a taken array, a
- * not-taken array, and a choice array. The taken/not-taken arrays are indexed
- * by a hash of the PC and the global history. The choice array is indexed by
- * the PC only. Because the taken/not-taken arrays use the same index, they
- * be the same size.
- *
- * The bi-mode branch predictor aims to eliminate the destructive aliasing that
- * occurs when two branches of opposite biases share the same global history
- * pattern. By separating the predictors into taken/not-taken arrays, and using
- * the branch's PC to choose between the two, destructive aliasing is reduced.
+ * Implements a perceptron branch predictor. The perceptron predictor uses a 
+ * branch predictor table and assigns a set of weights to each entry. 
+ * These weights can be multiplied with each bit in the global history register 
+ * and summed up together to make a prediction. Essentially, this is a dot product 
+ * between the weights and the corresponding bits on the global history register. 
+ * The table is indexed by a combination of the branch address and the global history register. 
+ * Upon receiving the actual outcome of the branch the weights are updated; each weight on the branch is 
+ * compared with each global history bit, if they are equal the corresponding weight is increased by 1; 
+ * if not the weight is decreased by 1.
  */
 
 class PerceptronBP : public BPredUnit
@@ -85,7 +83,6 @@ class PerceptronBP : public BPredUnit
     int counter;
     Addr branchAddress;
     long avgPred;
-
 
     // unsigned takenThreshold;
 };

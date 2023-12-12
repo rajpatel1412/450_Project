@@ -27,7 +27,7 @@
  */
 
 /* @file
- * Implementation of a bi-mode branch predictor
+ * Implementation of perceptron branch predictor
  */
 #include "cpu/pred/perceptron.hh"
 
@@ -60,8 +60,7 @@ PerceptronBP::PerceptronBP(const PerceptronBPParams *params)
 
 /*
  * For an unconditional branch we set its history such that
- * everything is set to taken. I.e., its choice predictor
- * chooses the taken array and the taken array predicts taken.
+ * everything is set to taken.
  */
 void
 PerceptronBP::uncondBranch(ThreadID tid, Addr pc, void * &bpHistory)
@@ -97,15 +96,6 @@ PerceptronBP::squash(ThreadID tid, void *bpHistory)
     delete history;
 }
 
-/*
- * Here we lookup the actual branch prediction. We use the PC to
- * identify the bias of a particular branch, which is based on the
- * prediction in the choice array. A hash of the global history
- * register and a branch's PC is used to index into both the taken
- * and not-taken predictors, which both present a prediction. The
- * choice array's prediction is used to select between the two
- * direction predictors for the final branch prediction.
- */
 bool
 PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
 {
@@ -119,10 +109,13 @@ PerceptronBP::lookup(ThreadID tid, Addr branchAddr, void * &bpHistory)
     int prediction_output = 0;
     for (int i = 0; i < perceptrons[globalHistoryIdx].size(); i++)
     {
-        prediction_output += (perceptrons[globalHistoryIdx][i]
-                             * ((globalHistoryReg[tid]
-                             >> perceptrons[globalHistoryIdx].size()-i-1)
-                             & 1));
+        // prediction_output += (perceptrons[globalHistoryIdx][i]
+        //                      * ((globalHistoryReg[tid]
+        //                      >> perceptrons[globalHistoryIdx].size()-i-1)
+        //                      & 1));
+        if (((globalHistoryReg[tid]>>perceptrons[globalHistoryIdx].size()-i-1)
+             & 1) == 1)
+             prediction_output += perceptrons[globalHistoryIdx][i];
 
     }
     // avgPred += prediction_output;
@@ -184,12 +177,6 @@ PerceptronBP::btbUpdate(ThreadID tid, Addr branchAddr, void * &bpHistory)
     globalHistoryReg[tid] &= (historyRegisterMask & ~ULL(1));
 }
 
-/* Only the selected direction predictor will be updated with the final
- * outcome; the status of the unselected one will not be altered. The choice
- * predictor is always updated with the branch outcome, except when the
- * choice is opposite to the branch outcome but the selected counter of
- * the direction predictors makes a correct final prediction.
- */
 void
 PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
                     void *bpHistory, bool squashed, const StaticInstPtr &
@@ -216,16 +203,6 @@ PerceptronBP::update(ThreadID tid, Addr branchAddr, bool taken,
 
 
     // if (history->finalPred == taken) {
-    //    /* If the final prediction matches the actual branch's
-    //     * outcome and the choice predictor matches the final
-    //     * outcome, we update the choice predictor, otherwise it
-    //     * is not updated. While the designers of the bi-mode
-    //     * predictor don't explicity say why this is done, one
-    //     * can infer that it is to preserve the choice predictor's
-    //     * bias with respect to the branch being predicted; afterall,
-    //     * the whole point of the bi-mode predictor is to identify the
-    //     * atypical case when a branch deviates from its bias.
-    //     */
     //     //std::cout << "taken" << std::endl;
     //     //std::cout << perceptrons[globalHistoryIdx].size() << " " << history->weights.size() << std::endl;
         
