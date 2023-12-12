@@ -39,5 +39,5 @@ Enjoy using gem5 and please share your modifications and extensions.
 Build & Run instructions:
 scons -j 8 build/X86/gem5.opt CPU_MODELS='O3CPU,TimingSimpleCPU,MinorCPU' --gold-linker
 #Run these lines to build gem5, will take 10-15 minutes
-python3 launch.py 8 1
+python3 launch.py 8
 #Run this line to run the branch predictor benchmarks. Results can be found in the results directory.
